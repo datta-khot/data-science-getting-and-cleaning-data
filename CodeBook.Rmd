@@ -1,0 +1,126 @@
+---
+title: "Getting-And-Cleaning Course Proejct: CodeBook"
+output: html_document
+---
+
+##Introduction
+In this project, smartphone sensor signals (accelerometer and gyroscope) data 
+from `http://archive.ics.uci.edu/ml/datasets/Human+Activity+Recognition+Using+Smartphones` 
+is used as raw data. Note - data available under folder "Inertial Signals" is 
+not used as test and training data produced from them is already available. 
+
+The solution flow consists of three steps - Loading data, processing it, and 
+writing tidy data generated to a file.
+
+##Load raw data
+In this section, we load the activity_labels, features, train, and test data from file system
+```{r load-data, cache=TRUE}
+activity_labels <- read.table("./getdata_projectfiles_UCI HAR Dataset/UCI HAR Dataset/activity_labels.txt")
+names(activity_labels) <- c("activity_id", "activity_name")
+#load features.txt
+#561 x 2
+features <- read.table("./getdata_projectfiles_UCI HAR Dataset/UCI HAR Dataset/features.txt")
+names(features) <- c("feature_id", "feature_name")
+#load train data
+#7532 x 1
+subject_train <- read.table("./getdata_projectfiles_UCI HAR Dataset/UCI HAR Dataset/train/subject_train.txt")
+names(subject_train) <- c("subject_id")
+#7532 x 561
+X_train <- read.table("./getdata_projectfiles_UCI HAR Dataset/UCI HAR Dataset/train/X_train.txt")
+#7532 x 1
+y_train <- read.table("./getdata_projectfiles_UCI HAR Dataset/UCI HAR Dataset/train/y_train.txt")
+names(y_train) <- c("activity")
+#load test data
+#2947 x 1
+subject_test <- read.table("./getdata_projectfiles_UCI HAR Dataset/UCI HAR Dataset/test/subject_test.txt")
+names(subject_test) <- c("subject_id")
+#2947 x 561
+X_test <- read.table("./getdata_projectfiles_UCI HAR Dataset/UCI HAR Dataset/test/X_test.txt")
+#2947 x 1
+y_test <- read.table("./getdata_projectfiles_UCI HAR Dataset/UCI HAR Dataset/test/y_test.txt")
+names(y_test) <- c("activity")
+```
+
+## Process the data to generate tidy data
+In this section we perform following activities:
+1. Merges the training and the test sets to create one data set.
+2. Extracts only the measurements on the mean and standard deviation for each measurement. 
+3. Uses descriptive activity names to name the activities in the data set
+4. Appropriately labels the data set with descriptive variable names. 
+5. From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject.
+```{r process-data}
+#Step1
+#Combine X_train and y_train data to all_train
+all_train <- cbind(subject_train, X_train, y_train)
+#combine X_test and y_test to all_test
+all_test <- cbind(subject_test, X_test, y_test)
+#combine all_train and all_test data
+#combine train and test data
+all_data <- rbind(X_train, X_test)
+
+#Step 2
+#change columns names as feature names
+names(all_data) <- as.vector(features[,2])
+#select column names contaiming std and mean
+all_data <- all_data[, as.vector(grep("std|mean", colnames(all_data), 
+                                      value=FALSE))]
+#Add subject and y (activity_id) data columns to above filtered data
+subject_data <- rbind(subject_train, subject_test)
+y_data <- rbind(y_train, y_test)
+all_data <- cbind(subject_data, all_data, y_data)    
+
+#Step 3
+#Replace activity numbers with descrpitive activity names
+library(plyr)
+all_data$activity <- mapvalues(all_data$activity, c(1,2,3,4,5,6), 
+                    as.character(activity_labels$activity_name))
+
+#Step 4 - Make column names more descriptive
+#Remove () after functions like std, mean
+colnames(all_data) <- gsub("\\(\\)", "", colnames(all_data))
+colnames(all_data) <- gsub("-X", "-X-axis", colnames(all_data))
+colnames(all_data) <- gsub("-Y", "-Y-axis", colnames(all_data))
+colnames(all_data) <- gsub("-Z", "-Z-axis", colnames(all_data))
+
+#Step 5 - Create indendent tidy dataset with average of each variable for 
+#each activity and each subject
+library(dplyr, warn.conflicts=FALSE)
+tidy_data <- group_by(all_data, subject_id, activity) 
+tidy_data <- summarise_each(tidy_data, funs(mean))
+```
+
+##Store tidy data to a file
+The cleaned and processed data is stored to file.
+```{r store-data}
+write.table(tidy_data, file="tidy_data_project.txt", row.names=FALSE, col.names=TRUE,
+            sep="\t", quote=TRUE)
+```
+
+##Description of Variable names
+- subject_id: identifies the subject who performed the activity
+- activity: identifies name of the activity from list 
+            WALKING, WALKING_UPSTAIRS, WALKING_DOWNSTAIRS, SITTING, STANDING, LAYING
+
+
+In the rest of the virables -
+XYZ-axis is used to denote 3-axial signals in the X, Y and Z directions.
+mean and sd substrings in these variables denote average and standard deviation of variables.
+These variables are measured in HZ units.
+
+- tBodyAcc-XYZ
+- tGravityAcc-XYZ
+- tBodyAccJerk-XYZ
+- tBodyGyro-XYZ
+- tBodyGyroJerk-XYZ
+- tBodyAccMag
+- tGravityAccMag
+- tBodyAccJerkMag
+- tBodyGyroMag
+- tBodyGyroJerkMag
+- fBodyAcc-XYZ
+- fBodyAccJerk-XYZ
+- fBodyGyro-XYZ
+- fBodyAccMag
+- fBodyAccJerkMag
+- fBodyGyroMag
+- fBodyGyroJerkMag
