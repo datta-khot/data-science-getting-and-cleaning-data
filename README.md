@@ -1,6 +1,6 @@
 # data-science-getting-and-cleaning-data
 
-The flder includes the following files:
+The folder includes the following files:
 =========================================
 
 - 'run_analysis.R': This file contains the R code for loading, processing raw data and generating tidy from it.
@@ -11,6 +11,6 @@ The flder includes the following files:
 
 - 'CodeBook.html': HTML format file generated from CodeBook.rmd using Knitr.
 
-- 'README.md': This files explaining details of files related to the course project.
+- 'README.md': This file explaining details of files related to the course project.
 
 
